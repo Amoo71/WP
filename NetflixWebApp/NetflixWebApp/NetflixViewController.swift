@@ -21,7 +21,7 @@ private struct AssociatedKeys {
     static var actionKey: UInt8 = 0
 }
 
-class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
+class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, UIGestureRecognizerDelegate {
     
     private var webView: WKWebView!
     private var progressView: UIProgressView!
@@ -92,6 +92,8 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         setupWebView()
         setupUI()
         setupBrandingLabel()
+        
+        // Setup 5-tap gesture AFTER webView is created
         setup5TapGesture()
         
         // Show session injection prompt after a short delay
@@ -120,10 +122,16 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     // MARK: - 5-Tap Gesture Setup
     
     private func setup5TapGesture() {
+        // Create tap gesture that doesn't interfere with WebView
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         tapGesture.numberOfTapsRequired = 1
-        view.addGestureRecognizer(tapGesture)
-        print("✅ [Netflix by amo] 5-Tap gesture activated!")
+        tapGesture.cancelsTouchesInView = false // CRITICAL: Let WebView still receive taps!
+        tapGesture.delegate = self
+        
+        // Add to WebView so it captures taps on the web content
+        webView.addGestureRecognizer(tapGesture)
+        
+        print("✅ [Netflix by amo] 5-Tap gesture activated on WebView!")
     }
     
     @objc private func handleTap() {
@@ -1569,6 +1577,13 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
             progressView.progress = Float(webView.estimatedProgress)
             progressView.isHidden = webView.estimatedProgress >= 1.0
         }
+    }
+    
+    // MARK: - UIGestureRecognizerDelegate
+    
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        // Allow tap gesture to work simultaneously with WebView's gestures
+        return true
     }
     
     deinit {
