@@ -112,9 +112,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     
     private func setupFullscreen() {
         // Make app completely fullscreen
-        if #available(iOS 13.0, *) {
-            view.window?.windowScene?.statusBarManager?.statusBarHidden = true
-        }
+        // Note: statusBarHidden is controlled via prefersStatusBarHidden
         setNeedsStatusBarAppearanceUpdate()
         setNeedsUpdateOfHomeIndicatorAutoHidden()
     }
@@ -483,8 +481,8 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         config.allowsPictureInPictureMediaPlayback = true
         
         // CRITICAL: Enable FairPlay DRM + MSE (Media Source Extensions)
-        // Note: Only use valid WKPreferences keys to avoid crashes
-        config.preferences.javaScriptEnabled = true
+        // Note: JavaScript is enabled by default in WKWebView (iOS 14+)
+        // javaScriptEnabled is deprecated - removed
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
         
         // Enable media capabilities through WKWebViewConfiguration directly
@@ -1422,7 +1420,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
             preferredStyle: .actionSheet
         )
         
-        for (index, session) in sessions.enumerated() {
+        for (_, session) in sessions.enumerated() {
             alert.addAction(UIAlertAction(title: "📦 \(session.name)", style: .default) { [weak self] _ in
                 self?.injectSession(session.cookies, sessionName: session.name)
             })
@@ -1451,7 +1449,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         var injectedCount = 0
         
         for (name, value) in cookies {
-            var properties: [HTTPCookiePropertyKey: Any] = [
+            let properties: [HTTPCookiePropertyKey: Any] = [
                 .name: name,
                 .value: value,
                 .domain: ".netflix.com",
