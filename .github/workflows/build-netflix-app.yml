@@ -1,0 +1,82 @@
+name: Build Netflix WebView App
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'NetflixWebApp/**'
+      - '.github/workflows/build-netflix-app.yml'
+  workflow_dispatch:
+
+jobs:
+  build-ipa:
+    runs-on: macos-latest
+    
+    steps:
+    - name: 🔥 Checkout Code
+      uses: actions/checkout@v4
+    
+    - name: 📱 Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: ✅ Verify Xcode
+      run: |
+        xcodebuild -version
+        xcrun --sdk iphoneos --show-sdk-version
+    
+    - name: 🔨 Build Netflix WebView IPA
+      working-directory: NetflixWebApp
+      run: |
+        echo "🔥 Building Netflix by amo..."
+        
+        # Create build directory
+        mkdir -p build
+        
+        # Build for iOS device
+        xcodebuild clean build \
+          -project NetflixWebApp.xcodeproj \
+          -scheme NetflixWebApp \
+          -configuration Release \
+          -sdk iphoneos \
+          -derivedDataPath build \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+        
+        echo "✅ Build complete!"
+        
+        # Find the .app
+        APP_PATH=$(find build -name "NetflixWebApp.app" | head -n 1)
+        echo "📦 App found at: $APP_PATH"
+        
+        # Create Payload folder
+        mkdir -p Payload
+        cp -r "$APP_PATH" Payload/
+        
+        # Create IPA
+        zip -r NetflixWebApp.ipa Payload
+        
+        # Verify
+        ls -lh NetflixWebApp.ipa
+        unzip -l NetflixWebApp.ipa | head -20
+    
+    - name: 📦 Upload IPA Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: NetflixWebApp-IPA
+        path: NetflixWebApp/NetflixWebApp.ipa
+        if-no-files-found: error
+    
+    - name: 🎉 Build Complete
+      run: |
+        echo "======================================"
+        echo "🔥 NETFLIX WEBAPP - BUILT!"
+        echo "======================================"
+        echo ""
+        echo "✅ Download NetflixWebApp.ipa from Artifacts"
+        echo "✅ Sideload with AltStore/Sideloadly/TrollStore"
+        echo "✅ Open app → Session picker → Inject → Netflix!"
+        echo ""
+        echo "💉 BY AMO - WEBVIEW APPROACH 100% WORKING! 🚀"
