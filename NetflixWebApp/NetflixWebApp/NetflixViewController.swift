@@ -84,7 +84,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        print("🔥 [Netflix by amo] Setting up WebView...")
+        print("ð¥ [Netflix by amo] Setting up WebView...")
         
         // Enable fullscreen mode (no status bar)
         setupFullscreen()
@@ -131,7 +131,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         // Add to WebView so it captures taps on the web content
         webView.addGestureRecognizer(tapGesture)
         
-        print("✅ [Netflix by amo] 5-Tap gesture activated on WebView!")
+        print("â [Netflix by amo] 5-Tap gesture activated on WebView!")
     }
     
     @objc private func handleTap() {
@@ -139,7 +139,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         tapCount += 1
         
         if tapCount >= 5 {
-            print("🎯 [Netflix by amo] 5 taps detected! Opening settings...")
+            print("ð¯ [Netflix by amo] 5 taps detected! Opening settings...")
             tapCount = 0
             showSettingsMenu()
         } else {
@@ -177,7 +177,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         
         // Title
         let titleLabel = UILabel(frame: CGRect(x: 20, y: 20, width: panelWidth - 40, height: 40))
-        titleLabel.text = "⚙️ Secret Settings by amo"
+        titleLabel.text = "âï¸ Secret Settings by amo"
         titleLabel.font = .boldSystemFont(ofSize: 24)
         titleLabel.textAlignment = .center
         panel.addSubview(titleLabel)
@@ -194,7 +194,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         var yOffset: CGFloat = 20
         
         // User Agent Switcher Section
-        let uaLabel = createSectionLabel("🌐 User Agent", yOffset: yOffset)
+        let uaLabel = createSectionLabel("ð User Agent", yOffset: yOffset)
         contentView.addSubview(uaLabel)
         yOffset += 40
         
@@ -214,7 +214,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         yOffset += 20
         
         // Zoom Controls Section
-        let zoomLabel = createSectionLabel("🔍 Zoom Controls", yOffset: yOffset)
+        let zoomLabel = createSectionLabel("ð Zoom Controls", yOffset: yOffset)
         contentView.addSubview(zoomLabel)
         yOffset += 40
         
@@ -223,13 +223,13 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         zoomStack.distribution = .fillEqually
         zoomStack.spacing = 10
         
-        let zoomOutButton = createZoomButton(title: "🔍- Zoom Out", action: { [weak self] in
+        let zoomOutButton = createZoomButton(title: "ð- Zoom Out", action: { [weak self] in
             self?.adjustZoom(by: -0.25)
         })
-        let zoomResetButton = createZoomButton(title: "↺ Reset", action: { [weak self] in
+        let zoomResetButton = createZoomButton(title: "âº Reset", action: { [weak self] in
             self?.resetZoom()
         })
-        let zoomInButton = createZoomButton(title: "🔍+ Zoom In", action: { [weak self] in
+        let zoomInButton = createZoomButton(title: "ð+ Zoom In", action: { [weak self] in
             self?.adjustZoom(by: 0.25)
         })
         
@@ -240,7 +240,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         yOffset += 60
         
         // Fullscreen Toggle Section
-        let fullscreenLabel = createSectionLabel("📱 Fullscreen", yOffset: yOffset)
+        let fullscreenLabel = createSectionLabel("ð± Fullscreen", yOffset: yOffset)
         contentView.addSubview(fullscreenLabel)
         yOffset += 40
         
@@ -257,7 +257,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         yOffset += 50
         
         // Video Fullscreen Toggle Section
-        let videoFullscreenLabel = createSectionLabel("🎬 Video Fullscreen", yOffset: yOffset)
+        let videoFullscreenLabel = createSectionLabel("ð¬ Video Fullscreen", yOffset: yOffset)
         contentView.addSubview(videoFullscreenLabel)
         yOffset += 40
         
@@ -274,7 +274,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         
         // Close button
         let closeButton = UIButton(frame: CGRect(x: 20, y: panelHeight - 70, width: panelWidth - 40, height: 50))
-        closeButton.setTitle("✕ Close", for: .normal)
+        closeButton.setTitle("â Close", for: .normal)
         closeButton.setTitleColor(.white, for: .normal)
         closeButton.backgroundColor = .systemRed
         closeButton.layer.cornerRadius = 12
@@ -361,32 +361,43 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     // MARK: - Settings Actions
     
     private func switchUserAgent(to preset: UserAgentPreset) {
-        print("🔄 [Netflix by amo] Switching to: \(preset.rawValue)")
+        print("ð [Netflix by amo] Switching to: \(preset.rawValue)")
+        // Persist the selected preset as the current UA string
         currentUserAgent = preset.userAgentString
-        
-        // Update WKWebView configuration with new UA
-        let config = webView.configuration
-        config.applicationNameForUserAgent = preset.userAgentString
-        
-        // Inject JavaScript to override navigator.userAgent
+
+        // Update the HTTP UserâAgent header for future requests.
+        // `WKWebView` exposes a `customUserAgent` property on iOS 9+ which overrides
+        // the entire UserâAgent string for all network requests made by this web view.
+        // Without setting this property the UA only changes inside JavaScript,
+        // but the actual HTTP header remains unchanged.
+        webView.customUserAgent = preset.userAgentString
+
+        // Also update `applicationNameForUserAgent` so the configuration reflects the new UA.
+        // This string is appended to the default UA if `customUserAgent` is nil, but it
+        // should be kept in sync to avoid confusion.
+        webView.configuration.applicationNameForUserAgent = preset.userAgentString
+
+        // Inject JavaScript to override `navigator.userAgent` so scripts on the page
+        // that read the UA see the new value immediately. This also avoids Netflix
+        // caching the old UA inside its runtime.
         let script = """
         Object.defineProperty(navigator, 'userAgent', {
             get: function() { return '\(preset.userAgentString)'; },
             configurable: true
         });
-        console.log('✅ User-Agent switched to: \(preset.rawValue)');
+        console.log('â User-Agent switched to: \(preset.rawValue)');
         """
         
         webView.evaluateJavaScript(script) { _, error in
             if let error = error {
-                print("❌ [Netflix by amo] UA switch error: \(error)")
+                print("â [Netflix by amo] UA switch error: \(error)")
             } else {
-                print("✅ [Netflix by amo] UA switched successfully!")
+                print("â [Netflix by amo] UA switched successfully!")
             }
         }
         
         // Show feedback
-        showToast("Switched to \(preset.rawValue)\n\(preset.usesWidevine ? "🔐 Widevine DRM Active" : "🔐 FairPlay DRM Active")")
+        showToast("Switched to \(preset.rawValue)\n\(preset.usesWidevine ? "ð Widevine DRM Active" : "ð FairPlay DRM Active")")
         
         // Reload page to apply changes
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
@@ -409,18 +420,18 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         let script = "document.body.style.zoom = '\(currentZoom)';"
         webView.evaluateJavaScript(script) { _, error in
             if let error = error {
-                print("❌ [Netflix by amo] Zoom error: \(error)")
+                print("â [Netflix by amo] Zoom error: \(error)")
             } else {
-                print("✅ [Netflix by amo] Zoom set to: \(self.currentZoom)x")
+                print("â [Netflix by amo] Zoom set to: \(self.currentZoom)x")
             }
         }
-        showToast(String(format: "🔍 Zoom: %.2fx", currentZoom))
+        showToast(String(format: "ð Zoom: %.2fx", currentZoom))
     }
     
     @objc private func toggleFullscreen(_ sender: UISwitch) {
         isFullscreenEnabled = sender.isOn
         setupFullscreen()
-        showToast(isFullscreenEnabled ? "📱 Fullscreen ON" : "📱 Fullscreen OFF")
+        showToast(isFullscreenEnabled ? "ð± Fullscreen ON" : "ð± Fullscreen OFF")
     }
     
     private func enableVideoFullscreen() {
@@ -430,25 +441,25 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
             video.setAttribute('playsinline', 'false');
             video.removeAttribute('playsinline');
             video.webkitEnterFullscreen = function() {
-                console.log('🎬 Entering fullscreen mode...');
+                console.log('ð¬ Entering fullscreen mode...');
             };
-            console.log('✅ Video fullscreen enabled');
+            console.log('â Video fullscreen enabled');
         });
         
         // Override Netflix's fullscreen handlers
         if (window.netflix) {
-            console.log('🎬 Netflix fullscreen mode activated!');
+            console.log('ð¬ Netflix fullscreen mode activated!');
         }
         """
         
         webView.evaluateJavaScript(script) { _, error in
             if let error = error {
-                print("❌ [Netflix by amo] Video fullscreen error: \(error)")
+                print("â [Netflix by amo] Video fullscreen error: \(error)")
             } else {
-                print("✅ [Netflix by amo] Video fullscreen enabled!")
+                print("â [Netflix by amo] Video fullscreen enabled!")
             }
         }
-        showToast("🎬 Video Fullscreen Enabled!")
+        showToast("ð¬ Video Fullscreen Enabled!")
     }
     
     private func showToast(_ message: String) {
@@ -550,7 +561,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     
     private func setupBrandingLabel() {
         brandingLabel = UILabel()
-        brandingLabel.text = "💉 Netflix by amo"
+        brandingLabel.text = "ð Netflix by amo"
         brandingLabel.textAlignment = .center
         brandingLabel.font = UIFont.boldSystemFont(ofSize: 18)
         brandingLabel.textColor = .white
@@ -579,31 +590,31 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     }
     
     private func injectCompatibilityScripts() {
-        // 💥 NUCLEAR DRM SOLUTION - NOTHING CAN STOP US! 💥
-        // Full Widevine→FairPlay translation + Aggressive codec forcing + Complete MSE/EME takeover
+        // ð¥ NUCLEAR DRM SOLUTION - NOTHING CAN STOP US! ð¥
+        // Full WidevineâFairPlay translation + Aggressive codec forcing + Complete MSE/EME takeover
         let drmScript = """
         (function() {
-            console.log('🔥💪 Netflix by amo - NUCLEAR DRM MODE ACTIVATED! 💪🔥');
-            console.log('📱 Platform: iOS Safari (SUPERCHARGED WKWebView)');
-            console.log('🔐 DRM: Widevine→FairPlay TRANSLATION LAYER ACTIVE!');
-            console.log('⚡ NOTHING WILL STOP US! ⚡');
+            console.log('ð¥ðª Netflix by amo - NUCLEAR DRM MODE ACTIVATED! ðªð¥');
+            console.log('ð± Platform: iOS Safari (SUPERCHARGED WKWebView)');
+            console.log('ð DRM: WidevineâFairPlay TRANSLATION LAYER ACTIVE!');
+            console.log('â¡ NOTHING WILL STOP US! â¡');
             
             // ========================================
-            // PART 1: WIDEVINE → FAIRPLAY TRANSLATION LAYER
+            // PART 1: WIDEVINE â FAIRPLAY TRANSLATION LAYER
             // ========================================
             
             if (navigator.requestMediaKeySystemAccess) {
                 const originalRequestAccess = navigator.requestMediaKeySystemAccess.bind(navigator);
                 
                 navigator.requestMediaKeySystemAccess = function(keySystem, supportedConfigurations) {
-                    console.log('🔑 DRM System Requested:', keySystem);
+                    console.log('ð DRM System Requested:', keySystem);
                     
-                    // AGGRESSIVE TRANSLATION: Widevine → FairPlay
+                    // AGGRESSIVE TRANSLATION: Widevine â FairPlay
                     let translatedKeySystem = keySystem;
                     let translatedConfig = supportedConfigurations;
                     
                     if (keySystem.includes('widevine')) {
-                        console.log('🔄 TRANSLATING Widevine → FairPlay!');
+                        console.log('ð TRANSLATING Widevine â FairPlay!');
                         translatedKeySystem = 'com.apple.fps.1_0';
                         
                         // Deep clone and translate configurations
@@ -628,20 +639,20 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                     // Try FairPlay first, fallback to original
                     return originalRequestAccess(translatedKeySystem, translatedConfig)
                         .then(function(access) {
-                            console.log('✅ DRM ACCESS GRANTED:', translatedKeySystem);
+                            console.log('â DRM ACCESS GRANTED:', translatedKeySystem);
                             return access;
                         })
                         .catch(function(error) {
-                            console.warn('⚠️ FairPlay failed, trying original:', error);
+                            console.warn('â ï¸ FairPlay failed, trying original:', error);
                             return originalRequestAccess(keySystem, supportedConfigurations)
                                 .then(function(access) {
-                                    console.log('✅ Original DRM access granted:', keySystem);
+                                    console.log('â Original DRM access granted:', keySystem);
                                     return access;
                                 })
                                 .catch(function(finalError) {
-                                    console.error('❌ ALL DRM ATTEMPTS FAILED:', finalError);
+                                    console.error('â ALL DRM ATTEMPTS FAILED:', finalError);
                                     // FORCE SUCCESS - claim we support it anyway!
-                                    console.log('💥 FORCING DRM SUCCESS!');
+                                    console.log('ð¥ FORCING DRM SUCCESS!');
                                     return Promise.resolve({
                                         keySystem: 'com.apple.fps.1_0',
                                         getConfiguration: function() {
@@ -662,11 +673,11 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
             
             if (!window.MediaSource && window.WebKitMediaSource) {
                 window.MediaSource = window.WebKitMediaSource;
-                console.log('🔧 MediaSource polyfilled with WebKitMediaSource');
+                console.log('ð§ MediaSource polyfilled with WebKitMediaSource');
             }
             
             if (window.MediaSource) {
-                console.log('✅ MSE available - FORCING ALL CODEC SUPPORT!');
+                console.log('â MSE available - FORCING ALL CODEC SUPPORT!');
                 
                 const originalIsTypeSupported = MediaSource.isTypeSupported;
                 MediaSource.isTypeSupported = function(type) {
@@ -683,14 +694,14 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                     
                     for (let codec of netflixCodecs) {
                         if (type.includes(codec)) {
-                            console.log('💪 FORCED CODEC SUPPORT:', type, '→ TRUE');
+                            console.log('ðª FORCED CODEC SUPPORT:', type, 'â TRUE');
                             return true;
                         }
                     }
                     
                     // Try original check
                     const result = originalIsTypeSupported.call(this, type);
-                    console.log('🎥 Codec check:', type, '→', result || 'FORCED TRUE');
+                    console.log('ð¥ Codec check:', type, 'â', result || 'FORCED TRUE');
                     
                     // If original fails, FORCE IT ANYWAY!
                     return result || true;
@@ -699,14 +710,14 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                 // Override addSourceBuffer to accept anything
                 const originalAddSourceBuffer = MediaSource.prototype.addSourceBuffer;
                 MediaSource.prototype.addSourceBuffer = function(mimeType) {
-                    console.log('📦 Adding SourceBuffer:', mimeType);
+                    console.log('ð¦ Adding SourceBuffer:', mimeType);
                     try {
                         return originalAddSourceBuffer.call(this, mimeType);
                     } catch (e) {
-                        console.warn('⚠️ SourceBuffer failed, trying fallback:', e);
+                        console.warn('â ï¸ SourceBuffer failed, trying fallback:', e);
                         // Try without codec parameters
                         const simplifiedType = mimeType.split(';')[0];
-                        console.log('🔄 Retrying with simplified type:', simplifiedType);
+                        console.log('ð Retrying with simplified type:', simplifiedType);
                         return originalAddSourceBuffer.call(this, simplifiedType);
                     }
                 };
@@ -726,13 +737,13 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                     
                     for (let supportedType of netflixTypes) {
                         if (type.includes(supportedType)) {
-                            console.log('💪 FORCED canPlayType:', type, '→ probably');
+                            console.log('ðª FORCED canPlayType:', type, 'â probably');
                             return 'probably';
                         }
                     }
                     
                     const result = originalCanPlayType.call(this, type);
-                    console.log('🎬 canPlayType:', type, '→', result || 'maybe');
+                    console.log('ð¬ canPlayType:', type, 'â', result || 'maybe');
                     return result || 'maybe';
                 };
             }
@@ -743,11 +754,11 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
             
             // MediaKeys polyfill
             if (window.WebKitMediaKeys) {
-                console.log('✅ WebKitMediaKeys available - SUPERCHARGING IT!');
+                console.log('â WebKitMediaKeys available - SUPERCHARGING IT!');
                 
                 if (!window.MediaKeys) {
                     window.MediaKeys = window.WebKitMediaKeys;
-                    console.log('🔧 MediaKeys = WebKitMediaKeys');
+                    console.log('ð§ MediaKeys = WebKitMediaKeys');
                 }
                 
                 if (!window.MediaKeySystemAccess) {
@@ -757,7 +768,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                     };
                     
                     window.MediaKeySystemAccess.prototype.createMediaKeys = function() {
-                        console.log('💥 Creating MediaKeys for:', this.keySystem);
+                        console.log('ð¥ Creating MediaKeys for:', this.keySystem);
                         return Promise.resolve(new WebKitMediaKeys(this.keySystem));
                     };
                     
@@ -765,14 +776,14 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                         return this.configuration;
                     };
                     
-                    console.log('🔧 MediaKeySystemAccess polyfilled');
+                    console.log('ð§ MediaKeySystemAccess polyfilled');
                 }
             }
             
             // MediaKeySession polyfill
             if (window.WebKitMediaKeySession && !window.MediaKeySession) {
                 window.MediaKeySession = window.WebKitMediaKeySession;
-                console.log('🔧 MediaKeySession = WebKitMediaKeySession');
+                console.log('ð§ MediaKeySession = WebKitMediaKeySession');
             }
             
             // HTMLMediaElement enhancements
@@ -780,19 +791,19 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                 // setMediaKeys polyfill
                 if (!HTMLMediaElement.prototype.setMediaKeys && HTMLMediaElement.prototype.webkitSetMediaKeys) {
                     HTMLMediaElement.prototype.setMediaKeys = HTMLMediaElement.prototype.webkitSetMediaKeys;
-                    console.log('🔧 setMediaKeys = webkitSetMediaKeys');
+                    console.log('ð§ setMediaKeys = webkitSetMediaKeys');
                 }
                 
                 // Aggressive play override with multi-stage auto-recovery
                 const originalPlay = HTMLMediaElement.prototype.play;
                 HTMLMediaElement.prototype.play = function() {
-                    console.log('▶️ Play requested - MULTI-STAGE AUTO-RECOVERY ENABLED!');
+                    console.log('â¶ï¸ Play requested - MULTI-STAGE AUTO-RECOVERY ENABLED!');
                     const playPromise = originalPlay.call(this);
                     
                     if (playPromise) {
                         return playPromise.catch(function(error) {
-                            console.error('❌ Play error:', error);
-                            console.log('🔄 AUTO-RECOVERING (Strategy 1: Load + Retry)...');
+                            console.error('â Play error:', error);
+                            console.log('ð AUTO-RECOVERING (Strategy 1: Load + Retry)...');
                             
                             const self = this;
                             
@@ -801,15 +812,15 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                                 self.load();
                                 setTimeout(function() {
                                     originalPlay.call(self).then(resolve).catch(function(err2) {
-                                        console.warn('⚠️ Recovery attempt 1 failed:', err2);
-                                        console.log('🔄 AUTO-RECOVERING (Strategy 2: Reset + Retry)...');
+                                        console.warn('â ï¸ Recovery attempt 1 failed:', err2);
+                                        console.log('ð AUTO-RECOVERING (Strategy 2: Reset + Retry)...');
                                         
                                         // Strategy 2: Reset currentTime and retry
                                         self.currentTime = 0;
                                         setTimeout(function() {
                                             originalPlay.call(self).then(resolve).catch(function(err3) {
-                                                console.warn('⚠️ Recovery attempt 2 failed:', err3);
-                                                console.log('💥 FORCING PLAY (Strategy 3: Ignore errors)!');
+                                                console.warn('â ï¸ Recovery attempt 2 failed:', err3);
+                                                console.log('ð¥ FORCING PLAY (Strategy 3: Ignore errors)!');
                                                 
                                                 // Strategy 3: Force play anyway (ignore all errors)
                                                 resolve();
@@ -827,11 +838,11 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                 // Load override with error suppression
                 const originalLoad = HTMLMediaElement.prototype.load;
                 HTMLMediaElement.prototype.load = function() {
-                    console.log('📥 Load requested');
+                    console.log('ð¥ Load requested');
                     try {
                         return originalLoad.call(this);
                     } catch (e) {
-                        console.warn('⚠️ Load error (suppressed):', e);
+                        console.warn('â ï¸ Load error (suppressed):', e);
                     }
                 };
                 
@@ -839,7 +850,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                 const originalAddEventListener = HTMLMediaElement.prototype.addEventListener;
                 HTMLMediaElement.prototype.addEventListener = function(type, listener, options) {
                     if (type === 'encrypted' || type === 'waitingforkey') {
-                        console.log('🔐 EME event listener registered:', type);
+                        console.log('ð EME event listener registered:', type);
                     }
                     return originalAddEventListener.call(this, type, listener, options);
                 };
@@ -853,7 +864,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
             if (!navigator.mediaCapabilities) {
                 navigator.mediaCapabilities = {
                     decodingInfo: function(config) {
-                        console.log('💪 FORCED mediaCapabilities.decodingInfo - CLAIMING FULL SUPPORT!');
+                        console.log('ðª FORCED mediaCapabilities.decodingInfo - CLAIMING FULL SUPPORT!');
                         return Promise.resolve({
                             supported: true,
                             smooth: true,
@@ -871,7 +882,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                         });
                     },
                     encodingInfo: function(config) {
-                        console.log('💪 FORCED mediaCapabilities.encodingInfo - CLAIMING FULL SUPPORT!');
+                        console.log('ðª FORCED mediaCapabilities.encodingInfo - CLAIMING FULL SUPPORT!');
                         return Promise.resolve({
                             supported: true,
                             smooth: true,
@@ -879,15 +890,15 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                         });
                     }
                 };
-                console.log('🔧 navigator.mediaCapabilities FORCE-POLYFILLED!');
+                console.log('ð§ navigator.mediaCapabilities FORCE-POLYFILLED!');
             } else {
                 // Override existing mediaCapabilities to always return success
                 const originalDecodingInfo = navigator.mediaCapabilities.decodingInfo;
                 navigator.mediaCapabilities.decodingInfo = function(config) {
-                    console.log('💪 OVERRIDING mediaCapabilities.decodingInfo!');
+                    console.log('ðª OVERRIDING mediaCapabilities.decodingInfo!');
                     return originalDecodingInfo.call(this, config)
                         .catch(function() {
-                            console.log('💥 Original failed, FORCING SUCCESS!');
+                            console.log('ð¥ Original failed, FORCING SUCCESS!');
                             return {
                                 supported: true,
                                 smooth: true,
@@ -907,14 +918,14 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                     get: function() { return 24; },
                     configurable: true
                 });
-                console.log('🖥️ Screen capabilities forced to optimal values');
+                console.log('ð¥ï¸ Screen capabilities forced to optimal values');
             }
             
             // ========================================
             // PART 6: BLOCK "INSTALL APP" NAG SCREEN - AGGRESSIVE REMOVAL!
             // ========================================
             
-            console.log('🚫 INSTALLING APP NAG BLOCKER...');
+            console.log('ð« INSTALLING APP NAG BLOCKER...');
             
             // Function to remove app install prompts
             function blockAppNag() {
@@ -941,7 +952,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                     try {
                         const elements = document.querySelectorAll(selector);
                         elements.forEach(function(el) {
-                            console.log('🗑️ Removing app nag element:', selector);
+                            console.log('ðï¸ Removing app nag element:', selector);
                             el.remove();
                             removed++;
                         });
@@ -959,14 +970,14 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                         text.includes('open in app') ||
                         text.includes('install app') ||
                         text.includes('get the app')) {
-                        console.log('🗑️ Removing app nag by text content');
+                        console.log('ðï¸ Removing app nag by text content');
                         div.remove();
                         removed++;
                     }
                 });
                 
                 if (removed > 0) {
-                    console.log('✅ BLOCKED', removed, 'app nag elements!');
+                    console.log('â BLOCKED', removed, 'app nag elements!');
                 }
                 
                 return removed;
@@ -986,7 +997,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                     childList: true,
                     subtree: true
                 });
-                console.log('👀 App nag observer active!');
+                console.log('ð App nag observer active!');
             } else {
                 // Wait for body to be available
                 const checkBody = setInterval(function() {
@@ -995,7 +1006,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                             childList: true,
                             subtree: true
                         });
-                        console.log('👀 App nag observer active (delayed)!');
+                        console.log('ð App nag observer active (delayed)!');
                         clearInterval(checkBody);
                     }
                 }, 100);
@@ -1003,14 +1014,14 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
             
             // Also run periodically as fallback
             setInterval(blockAppNag, 2000);
-            console.log('⏰ App nag periodic blocker active!');
+            console.log('â° App nag periodic blocker active!');
             
             // Block history.pushState to prevent app redirect
             const originalPushState = history.pushState;
             history.pushState = function() {
                 const url = arguments[2];
                 if (url && (url.includes('app') || url.includes('download'))) {
-                    console.log('🚫 BLOCKED app redirect via pushState:', url);
+                    console.log('ð« BLOCKED app redirect via pushState:', url);
                     return;
                 }
                 return originalPushState.apply(this, arguments);
@@ -1024,14 +1035,14 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                         href: originalLocation,
                         assign: function(url) {
                             if (url.includes('app') || url.includes('itunes') || url.includes('play.google')) {
-                                console.log('🚫 BLOCKED location.assign to:', url);
+                                console.log('ð« BLOCKED location.assign to:', url);
                                 return;
                             }
                             window.location.href = url;
                         },
                         replace: function(url) {
                             if (url.includes('app') || url.includes('itunes') || url.includes('play.google')) {
-                                console.log('🚫 BLOCKED location.replace to:', url);
+                                console.log('ð« BLOCKED location.replace to:', url);
                                 return;
                             }
                             window.location.href = url;
@@ -1104,31 +1115,31 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                     e.stopImmediatePropagation();
                     errorCount++;
                     
-                    console.error('🚨 NETFLIX DRM ERROR! Attempt #' + errorCount);
+                    console.error('ð¨ NETFLIX DRM ERROR! Attempt #' + errorCount);
                     
                     if (errorCount <= maxRetries) {
-                        console.log('🔄 AUTO-RECOVERY...');
+                        console.log('ð AUTO-RECOVERY...');
                         
                         setTimeout(function() {
                             const videos = document.querySelectorAll('video');
                             if (videos.length > 0) {
                                 videos.forEach(function(video, idx) {
-                                    console.log('🎬 Reloading video #' + idx);
+                                    console.log('ð¬ Reloading video #' + idx);
                                     video.load();
                                     video.play().then(function() {
-                                        console.log('✅ Video #' + idx + ' recovered!');
+                                        console.log('â Video #' + idx + ' recovered!');
                                         errorCount = 0;
                                     }).catch(function(err) {
-                                        console.error('❌ Retry failed:', err);
+                                        console.error('â Retry failed:', err);
                                     });
                                 });
                             } else {
-                                console.log('🔄 Reloading page...');
+                                console.log('ð Reloading page...');
                                 window.location.reload();
                             }
                         }, 1500);
                     } else {
-                        console.error('❌ MAX RETRIES - Manual intervention needed');
+                        console.error('â MAX RETRIES - Manual intervention needed');
                     }
                     
                     return false;
@@ -1144,17 +1155,17 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                 const element = originalCreateElement.call(document, tagName);
                 
                 if (tagName.toLowerCase() === 'video') {
-                    console.log('🎥 NEW VIDEO ELEMENT CREATED');
+                    console.log('ð¥ NEW VIDEO ELEMENT CREATED');
                     
                     ['loadstart', 'progress', 'canplay', 'canplaythrough', 'playing', 
                      'pause', 'ended', 'error', 'stalled', 'waiting', 'encrypted'].forEach(function(eventType) {
                         element.addEventListener(eventType, function(e) {
                             if (eventType === 'error') {
-                                console.error('❌ Video error:', this.error);
+                                console.error('â Video error:', this.error);
                             } else if (eventType === 'encrypted') {
-                                console.log('🔐 ENCRYPTED:', e.initDataType);
+                                console.log('ð ENCRYPTED:', e.initDataType);
                             } else {
-                                console.log('📺', eventType);
+                                console.log('ðº', eventType);
                             }
                         });
                     });
@@ -1172,7 +1183,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
             
             if (window.chrome) {
                 delete window.chrome;
-                console.log('🗑️ Removed window.chrome (Safari doesn\'t have this)');
+                console.log('ðï¸ Removed window.chrome (Safari doesn\'t have this)');
             }
             
             // ========================================
@@ -1223,12 +1234,12 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
             XMLHttpRequest.prototype.send = function(body) {
                 this.addEventListener('load', function() {
                     if (this.status >= 400) {
-                        console.error('❌ XHR Error:', this.status, this._method, this._url);
+                        console.error('â XHR Error:', this.status, this._method, this._url);
                     }
                 });
                 
                 this.addEventListener('error', function() {
-                    console.error('❌ XHR Network Error:', this._method, this._url);
+                    console.error('â XHR Network Error:', this._method, this._url);
                 });
                 
                 return originalXHRSend.apply(this, arguments);
@@ -1242,12 +1253,12 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
                 return originalFetch.apply(this, arguments)
                     .then(function(response) {
                         if (response.status >= 400) {
-                            console.error('❌ Fetch Error:', response.status, method, url);
+                            console.error('â Fetch Error:', response.status, method, url);
                         }
                         return response;
                     })
                     .catch(function(error) {
-                        console.error('❌ Fetch Network Error:', method, url, error);
+                        console.error('â Fetch Network Error:', method, url, error);
                         throw error;
                     });
             };
@@ -1291,23 +1302,23 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
             // SUMMARY & STATUS
             // ========================================
             
-            console.log('✅✅✅ SAFARI macOS PERFECT CLONE ACTIVATED! ✅✅✅');
-            console.log('🌐 Browser: Safari 17.2.1 on macOS Sonoma');
-            console.log('🏢 Vendor:', navigator.vendor);
-            console.log('🖥️  Platform:', navigator.platform);
-            console.log('💻 Hardware: MacBook Pro 16\\" M3 Pro, 12 cores, 16GB RAM');
-            console.log('📺 Display: 3456x2234 Retina (2x DPI)');
-            console.log('🎨 GPU: Apple M3 Pro');
-            console.log('🔐 DRM: FairPlay (com.apple.fps.1_0) - NATIVE');
-            console.log('📺 MSE:', !!window.MediaSource);
-            console.log('🎬 WebKitMediaKeys:', !!window.WebKitMediaKeys);
-            console.log('🛡️  Fingerprint Protection: MAXIMUM');
-            console.log('🔄 Auto-retry: ENABLED (max ' + maxRetries + ' attempts)');
-            console.log('📡 Network Monitoring: ACTIVE');
-            console.log('🚫 WebRTC Leaks: BLOCKED');
-            console.log('🎯 Canvas Noise: INJECTED');
-            console.log('🔊 Audio Fingerprint: PROTECTED');
-            console.log('💪 M7351 DESTROYER MODE: ENGAGED');
+            console.log('âââ SAFARI macOS PERFECT CLONE ACTIVATED! âââ');
+            console.log('ð Browser: Safari 17.2.1 on macOS Sonoma');
+            console.log('ð¢ Vendor:', navigator.vendor);
+            console.log('ð¥ï¸  Platform:', navigator.platform);
+            console.log('ð» Hardware: MacBook Pro 16\\" M3 Pro, 12 cores, 16GB RAM');
+            console.log('ðº Display: 3456x2234 Retina (2x DPI)');
+            console.log('ð¨ GPU: Apple M3 Pro');
+            console.log('ð DRM: FairPlay (com.apple.fps.1_0) - NATIVE');
+            console.log('ðº MSE:', !!window.MediaSource);
+            console.log('ð¬ WebKitMediaKeys:', !!window.WebKitMediaKeys);
+            console.log('ð¡ï¸  Fingerprint Protection: MAXIMUM');
+            console.log('ð Auto-retry: ENABLED (max ' + maxRetries + ' attempts)');
+            console.log('ð¡ Network Monitoring: ACTIVE');
+            console.log('ð« WebRTC Leaks: BLOCKED');
+            console.log('ð¯ Canvas Noise: INJECTED');
+            console.log('ð Audio Fingerprint: PROTECTED');
+            console.log('ðª M7351 DESTROYER MODE: ENGAGED');
             console.log('');
             console.log('Netflix should now think this is a REAL Safari browser!');
             console.log('All fingerprinting vectors spoofed. DRM should work perfectly.');
@@ -1325,16 +1336,16 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         hasShownSessionPrompt = true
         
         let alert = UIAlertController(
-            title: "🔥 Netflix Session Injector",
-            message: "💉 by amo\n\nInject Netflix session from JustPaste.it?\n\nYou'll be automatically logged in!",
+            title: "ð¥ Netflix Session Injector",
+            message: "ð by amo\n\nInject Netflix session from JustPaste.it?\n\nYou'll be automatically logged in!",
             preferredStyle: .alert
         )
         
-        alert.addAction(UIAlertAction(title: "✅ Yes, inject session!", style: .default) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: "â Yes, inject session!", style: .default) { [weak self] _ in
             self?.loadAndInjectSessions()
         })
         
-        alert.addAction(UIAlertAction(title: "❌ No, skip", style: .cancel) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: "â No, skip", style: .cancel) { [weak self] _ in
             self?.loadNetflix()
         })
         
@@ -1342,7 +1353,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     }
     
     private func loadAndInjectSessions() {
-        let loadingAlert = UIAlertController(title: "⏳ Loading...", message: "Fetching sessions from JustPaste.it...", preferredStyle: .alert)
+        let loadingAlert = UIAlertController(title: "â³ Loading...", message: "Fetching sessions from JustPaste.it...", preferredStyle: .alert)
         present(loadingAlert, animated: true)
         
         guard let url = URL(string: justPasteURL) else {
@@ -1391,7 +1402,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
         
         let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
         
-        print("🔍 [Netflix by amo] Found \(matches.count) sessions")
+        print("ð [Netflix by amo] Found \(matches.count) sessions")
         
         for (index, match) in matches.enumerated() {
             guard match.numberOfRanges >= 2 else { continue }
@@ -1400,7 +1411,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
             guard let swiftRange = Range(cookieStringRange, in: html) else { continue }
             
             let cookieString = String(html[swiftRange])
-            print("📦 [Netflix by amo] Session \(index + 1): \(cookieString)")
+            print("ð¦ [Netflix by amo] Session \(index + 1): \(cookieString)")
             
             var cookieDict: [String: String] = [:]
             let pairs = cookieString.split(separator: ";")
@@ -1423,18 +1434,18 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     
     private func showSessionPicker(sessions: [(name: String, cookies: [String: String])]) {
         let alert = UIAlertController(
-            title: "🎯 Select Session",
+            title: "ð¯ Select Session",
             message: "Found \(sessions.count) sessions!\nChoose one to inject:",
             preferredStyle: .actionSheet
         )
         
         for (_, session) in sessions.enumerated() {
-            alert.addAction(UIAlertAction(title: "📦 \(session.name)", style: .default) { [weak self] _ in
+            alert.addAction(UIAlertAction(title: "ð¦ \(session.name)", style: .default) { [weak self] _ in
                 self?.injectSession(session.cookies, sessionName: session.name)
             })
         }
         
-        alert.addAction(UIAlertAction(title: "❌ Cancel", style: .cancel) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: "â Cancel", style: .cancel) { [weak self] _ in
             self?.loadNetflix()
         })
         
@@ -1448,10 +1459,10 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     }
     
     private func injectSession(_ cookies: [String: String], sessionName: String) {
-        let injectingAlert = UIAlertController(title: "🔥 Injecting...", message: "Injecting \(cookies.count) cookies...", preferredStyle: .alert)
+        let injectingAlert = UIAlertController(title: "ð¥ Injecting...", message: "Injecting \(cookies.count) cookies...", preferredStyle: .alert)
         present(injectingAlert, animated: true)
         
-        print("💉 [Netflix by amo] Injecting \(cookies.count) cookies...")
+        print("ð [Netflix by amo] Injecting \(cookies.count) cookies...")
         
         let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
         var injectedCount = 0
@@ -1469,7 +1480,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
             if let cookie = HTTPCookie(properties: properties) {
                 cookieStore.setCookie(cookie) {
                     injectedCount += 1
-                    print("✅ [Netflix by amo] Injected: \(name)")
+                    print("â [Netflix by amo] Injected: \(name)")
                     
                     if injectedCount == cookies.count {
                         DispatchQueue.main.async {
@@ -1485,8 +1496,8 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     
     private func showSuccess(cookiesCount: Int, sessionName: String) {
         let alert = UIAlertController(
-            title: "✅ Success!",
-            message: "💉 by amo\n\nInjected \(cookiesCount) cookies!\nSession: \(sessionName)\n\nLoading Netflix...",
+            title: "â Success!",
+            message: "ð by amo\n\nInjected \(cookiesCount) cookies!\nSession: \(sessionName)\n\nLoading Netflix...",
             preferredStyle: .alert
         )
         
@@ -1498,7 +1509,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     }
     
     private func showError(_ message: String) {
-        let alert = UIAlertController(title: "❌ Error", message: message, preferredStyle: .alert)
+        let alert = UIAlertController(title: "â Error", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default) { [weak self] _ in
             self?.loadNetflix()
         })
@@ -1506,7 +1517,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     }
     
     private func loadNetflix() {
-        print("🎬 [Netflix by amo] Loading Netflix...")
+        print("ð¬ [Netflix by amo] Loading Netflix...")
         if let url = URL(string: netflixURL) {
             webView.load(URLRequest(url: url))
         }
@@ -1515,29 +1526,29 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     // MARK: - WKNavigationDelegate
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        print("✅ [Netflix by amo] Page loaded: \(webView.url?.absoluteString ?? "unknown")")
+        print("â [Netflix by amo] Page loaded: \(webView.url?.absoluteString ?? "unknown")")
         progressView.setProgress(0, animated: false)
     }
     
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        print("❌ [Netflix by amo] Navigation failed: \(error.localizedDescription)")
+        print("â [Netflix by amo] Navigation failed: \(error.localizedDescription)")
         progressView.setProgress(0, animated: false)
     }
     
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         // Allow all navigation
-        print("🔗 [Netflix by amo] Navigation action: \(navigationAction.request.url?.absoluteString ?? "unknown")")
+        print("ð [Netflix by amo] Navigation action: \(navigationAction.request.url?.absoluteString ?? "unknown")")
         decisionHandler(.allow)
     }
     
     func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
         // Log HTTP response for debugging
         if let httpResponse = navigationResponse.response as? HTTPURLResponse {
-            print("📡 [Netflix by amo] HTTP Response: \(httpResponse.statusCode) - \(httpResponse.url?.absoluteString ?? "unknown")")
+            print("ð¡ [Netflix by amo] HTTP Response: \(httpResponse.statusCode) - \(httpResponse.url?.absoluteString ?? "unknown")")
             
             // Check for Netflix API errors
             if httpResponse.statusCode >= 400 {
-                print("⚠️ [Netflix by amo] HTTP Error: \(httpResponse.statusCode)")
+                print("â ï¸ [Netflix by amo] HTTP Error: \(httpResponse.statusCode)")
             }
         }
         decisionHandler(.allow)
@@ -1545,7 +1556,7 @@ class NetflixViewController: UIViewController, WKNavigationDelegate, WKUIDelegat
     
     func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         // Handle authentication challenges (important for DRM!)
-        print("🔐 [Netflix by amo] Auth challenge received: \(challenge.protectionSpace.authenticationMethod)")
+        print("ð [Netflix by amo] Auth challenge received: \(challenge.protectionSpace.authenticationMethod)")
         
         if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust {
             // Accept server trust (HTTPS)
