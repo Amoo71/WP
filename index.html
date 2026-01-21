@@ -6,20 +6,17 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>♥</title>
-
   <style>
     :root{
       --bgA:#05030a;
       --bgB:#14071a;
       --text: rgba(255,255,255,.92);
-      --shadow: 0 18px 70px rgba(255,0,120,.14), 0 14px 34px rgba(0,0,0,.55);
       --safeTop: env(safe-area-inset-top);
       --safeBottom: env(safe-area-inset-bottom);
       --safeLeft: env(safe-area-inset-left);
       --safeRight: env(safe-area-inset-right);
     }
     *{ box-sizing: border-box; }
-
     html, body {
       height: 100%;
       margin: 0;
@@ -31,74 +28,57 @@
       -moz-osx-font-smoothing: grayscale;
       touch-action: manipulation;
     }
-
-    /* Background lava lamp */
-    #bg {
+    /* Background lava lamp canvas */
+    #bg{
       position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: block;
+      inset:0;
+      width:100%;
+      height:100%;
+      display:block;
       z-index: 0;
     }
-
-    /* Heart rain canvas: FORCE ON TOP so you ALWAYS see it */
-    #rain {
+    /* Heart rain container always on top */
+    #heartRain{
       position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: block;
-      z-index: 999;            /* <- above everything */
-      pointer-events: none;
+      inset:0;
+      pointer-events:none;
+      z-index: 9999;
+      overflow:hidden;
     }
-
-    .vignette {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background:
-        radial-gradient(900px 700px at 50% 25%, rgba(255,0,120,.10), rgba(255,0,120,0) 64%),
-        radial-gradient(1400px 1000px at 50% 65%, rgba(255,255,255,.05), rgba(255,255,255,0) 60%),
-        radial-gradient(1200px 1200px at 50% 50%, rgba(0,0,0,0), rgba(0,0,0,.72));
-      mix-blend-mode: screen;
-      opacity: .95;
-      z-index: 2;
+    .heartDrop{
+      position:absolute;
+      top: -12vh;
+      font-size: var(--size);
+      color: var(--color);
+      opacity:0;
+      animation: fall var(--duration) linear var(--delay) forwards;
     }
-    .grain {
-      position: fixed;
-      inset: 0;
-      z-index: 2;
-      pointer-events: none;
-      opacity: .10;
-      background-image:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
-      background-size: 160px 160px;
-      mix-blend-mode: overlay;
+    @keyframes fall{
+      0%{ opacity:0; transform: translateX(0) translateY(0) rotate(0deg); }
+      10%{ opacity:1; }
+      100%{ opacity:0; transform: translateX(var(--drift)) translateY(120vh) rotate(360deg); }
     }
-
-    .wrap {
+    /* Card wrapper and timer */
+    .wrap{
       position: relative;
-      z-index: 4;
-      height: 100dvh;
-      width: 100%;
+      z-index: 3;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
       padding: calc(18px + var(--safeTop)) calc(18px + var(--safeRight)) calc(18px + var(--safeBottom)) calc(18px + var(--safeLeft));
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
-
-    .card {
-      width: min(520px, 92vw);
+    .card{
+      position: relative;
+      width:min(520px, 92vw);
       border-radius: 30px;
       background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
-      border: 1px solid rgba(255,255,255,.20);
-      box-shadow: var(--shadow);
+      border:1px solid rgba(255,255,255,.20);
+      box-shadow: 0 18px 70px rgba(255,0,120,.14), 0 14px 34px rgba(0,0,0,.55);
       backdrop-filter: blur(18px) saturate(140%);
       -webkit-backdrop-filter: blur(18px) saturate(140%);
       padding: 22px 20px 18px;
-      position: relative;
-      overflow: hidden;
+      overflow:hidden;
     }
     .card::before{
       content:"";
@@ -106,386 +86,288 @@
       inset:-2px;
       background: radial-gradient(600px 220px at 50% -10%, rgba(255,255,255,.22), rgba(255,255,255,0) 60%);
       pointer-events:none;
-      opacity: .85;
+      opacity:.85;
     }
-
-    .timer {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      align-items: stretch;
-      margin: 2px auto 18px;
+    .timer{
+      display:grid;
+      grid-template-columns: repeat(3,1fr);
+      gap:12px;
+      margin:2px auto 18px;
     }
-    .pill {
-      border-radius: 18px;
-      padding: 14px 12px 12px;
-      text-align: center;
+    .pill{
+      border-radius:18px;
+      padding:14px 12px 12px;
+      text-align:center;
       background: rgba(255,255,255,.09);
-      border: 1px solid rgba(255,255,255,.16);
-      box-shadow: 0 14px 30px rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow:0 14px 30px rgba(0,0,0,.35);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
     }
-    .num {
-      font-size: 34px;
-      font-weight: 760;
-      line-height: 1.05;
+    .num{
+      font-size:34px;
+      font-weight:760;
+      line-height:1.05;
       font-variant-numeric: tabular-nums;
-      letter-spacing: -0.02em;
+      letter-spacing:-0.02em;
       color: rgba(255,255,255,.95);
-      text-shadow: 0 14px 40px rgba(0,0,0,.40);
+      text-shadow:0 14px 40px rgba(0,0,0,.40);
     }
-    .lbl {
-      margin-top: 6px;
-      font-size: 12px;
+    .lbl{
+      margin-top:6px;
+      font-size:12px;
       color: rgba(255,255,255,.60);
-      letter-spacing: .10em;
+      letter-spacing:.10em;
       text-transform: uppercase;
     }
-
-    .trackArea{ position: relative; height: 92px; background: transparent; border: 0; overflow: visible; }
+    /* Track area and hearts */
+    .trackArea{
+      position: relative;
+      height:92px;
+      background: transparent;
+      overflow: visible;
+    }
     .pathLine{
-      position:absolute; top: 52%; height: 2px; transform: translateY(-50%);
+      position:absolute;
+      top:52%;
+      height:2px;
+      transform: translateY(-50%);
       background: repeating-linear-gradient(90deg, rgba(255,79,163,.80) 0 10px, rgba(255,79,163,0) 10px 18px);
       filter: drop-shadow(0 10px 22px rgba(255,0,120,.26));
-      opacity: .95;
+      opacity:.95;
     }
     .pathDot{
-      position:absolute; top: 52%; width: 9px; height: 9px; border-radius: 999px; transform: translate(-50%, -50%);
-      background: rgba(255,79,163,.98); box-shadow: 0 12px 26px rgba(255,0,120,.35);
+      position:absolute;
+      top:52%;
+      width:9px;
+      height:9px;
+      border-radius:999px;
+      transform: translate(-50%, -50%);
+      background: rgba(255,79,163,.98);
+      box-shadow: 0 12px 26px rgba(255,0,120,.35);
     }
     .heartBtn{
-      position:absolute; top: 52%; transform: translate(-50%, -50%);
-      width: 64px; height: 64px; display:grid; place-items:center;
-      pointer-events: none; background: transparent; border: 0;
+      position:absolute;
+      top:52%;
+      transform: translate(-50%, -50%);
+      width:64px;
+      height:64px;
+      display:grid;
+      place-items:center;
+      pointer-events: none;
+      background:transparent;
+      border:0;
     }
     .heartIcon{
-      width: 46px; height: 46px; display:block; animation: beat 1.05s infinite; transform-origin: center;
+      width:46px;
+      height:46px;
+      animation: beat 1.05s infinite;
+      transform-origin:center;
       filter: drop-shadow(0 14px 28px rgba(255,0,120,.25)) drop-shadow(0 18px 42px rgba(0,0,0,.35));
     }
     @keyframes beat{
-      0%{ transform: scale(1); }
-      14%{ transform: scale(1.10); }
-      28%{ transform: scale(1.00); }
-      40%{ transform: scale(1.12); }
-      55%{ transform: scale(1.00); }
-      100%{ transform: scale(1); }
-    }
+      0%{transform:scale(1);} 14%{transform:scale(1.10);} 28%{transform:scale(1.00);} 40%{transform:scale(1.12);} 55%{transform:scale(1.00);} 100%{transform:scale(1);} }
     .badgeLetter{
-      position:absolute; font-weight: 900; font-size: 15px; letter-spacing: .02em;
-      color: rgba(255,255,255,.96); text-shadow: 0 12px 28px rgba(0,0,0,.35);
+      position:absolute;
+      font-weight:900;
+      font-size:15px;
+      color: rgba(255,255,255,.96);
+      text-shadow:0 12px 28px rgba(0,0,0,.35);
       transform: translateY(1px);
+      pointer-events:none;
     }
-
-    @media (prefers-reduced-motion: reduce){ .heartIcon{ animation:none; } }
+    @media (prefers-reduced-motion:reduce){ .heartIcon{ animation:none; } }
   </style>
 </head>
-
 <body>
+  <!-- Lava Lamp background canvas -->
   <canvas id="bg"></canvas>
-  <div class="vignette"></div>
-  <div class="grain"></div>
-  <canvas id="rain"></canvas>
-
+  <!-- Falling hearts container -->
+  <div id="heartRain"></div>
+  <!-- Vignette and grain overlays for depth -->
+  <div class="vignette" style="position:fixed;inset:0;pointer-events:none;background:
+      radial-gradient(900px 700px at 50% 25%, rgba(255,0,120,.10), rgba(255,0,120,0) 64%),
+      radial-gradient(1400px 1000px at 50% 65%, rgba(255,255,255,.05), rgba(255,255,255,0) 60%),
+      radial-gradient(1200px 1200px at 50% 50%, rgba(0,0,0,0), rgba(0,0,0,.72));
+      mix-blend-mode: screen; opacity:.95; z-index:2;"></div>
+  <div class="grain" style="position:fixed;inset:0;pointer-events:none;opacity:.10;background-image:url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'160\' height=\'160\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'.8\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'160\' height=\'160\' filter=\'url(%23n)\' opacity=\'.55\'/%3E%3C/svg%3E'); background-size:160px 160px; mix-blend-mode: overlay; z-index:2;"></div>
+  <!-- Main content -->
   <div class="wrap">
-    <div class="card">
+    <div class="card" role="application" aria-label="Countdown bis 25.01.2026">
       <div class="timer" aria-live="polite">
         <div class="pill"><div class="num" id="days">—</div><div class="lbl">Tage</div></div>
         <div class="pill"><div class="num" id="hours">—</div><div class="lbl">Stunden</div></div>
         <div class="pill"><div class="num" id="minutes">—</div><div class="lbl">Minuten</div></div>
       </div>
-
-      <div class="trackArea">
+      <div class="trackArea" aria-label="Herzen bewegen sich zur Mitte">
         <div class="pathLine" id="pathLine"></div>
         <div class="pathDot" id="dotL"></div>
         <div class="pathDot" id="dotR"></div>
-
-        <div class="heartBtn" id="heartA" style="left: 10%;">
+        <div class="heartBtn" id="heartA" style="left:8%;">
           <svg class="heartIcon" viewBox="0 0 64 64" aria-hidden="true">
-            <defs>
-              <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0" stop-color="#ff86c5"/>
-                <stop offset="1" stop-color="#ff4fa3"/>
-              </linearGradient>
-            </defs>
-            <path d="M32 56s-22-13.6-28.4-27.1C-1.2 17.2 7.1 6.7 19 8.3c5.3.7 9.5 4.3 13 8.9c3.5-4.6 7.7-8.2 13-8.9c11.9-1.6 20.2 8.9 15.4 20.6C54 42.4 32 56 32 56z" fill="url(#g1)"/>
+            <defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ff86c5"/><stop offset="1" stop-color="#ff4fa3"/></linearGradient></defs>
+            <path d="M32 56s-22-13.6-28.4-27.1C-1.2 17.2 7.1 6.7 19 8.3c5.3.7 9.5 4.3 13 8.9c3.5-4.6 7.7-8.2 13-8.9c11.9-1.6 20.2 8.9 15.4 20.6C54 42.4 32 56 32 56z" fill="url(#g1)" />
           </svg>
           <div class="badgeLetter">A</div>
         </div>
-
-        <div class="heartBtn" id="heartF" style="left: 90%;">
+        <div class="heartBtn" id="heartF" style="left:92%;">
           <svg class="heartIcon" viewBox="0 0 64 64" aria-hidden="true">
-            <defs>
-              <linearGradient id="g2" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0" stop-color="#ffd1e9"/>
-                <stop offset="1" stop-color="#ff4fa3"/>
-              </linearGradient>
-            </defs>
-            <path d="M32 56s-22-13.6-28.4-27.1C-1.2 17.2 7.1 6.7 19 8.3c5.3.7 9.5 4.3 13 8.9c3.5-4.6 7.7-8.2 13-8.9c11.9-1.6 20.2 8.9 15.4 20.6C54 42.4 32 56 32 56z" fill="url(#g2)"/>
+            <defs><linearGradient id="g2" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffd1e9"/><stop offset="1" stop-color="#ff4fa3"/></linearGradient></defs>
+          <path d="M32 56s-22-13.6-28.4-27.1C-1.2 17.2 7.1 6.7 19 8.3c5.3.7 9.5 4.3 13 8.9c3.5-4.6 7.7-8.2 13-8.9c11.9-1.6 20.2 8.9 15.4 20.6C54 42.4 32 56 32 56z" fill="url(#g2)" />
           </svg>
           <div class="badgeLetter">F</div>
         </div>
       </div>
     </div>
   </div>
-
   <script>
-    // -------- Helpers
-    const rand = (a,b)=>a+Math.random()*(b-a);
-    const pad2 = (n)=>String(n).padStart(2,"0");
-    const clamp01=(x)=>Math.max(0,Math.min(1,x));
-
-    // -------- Contexts
-    const bg = document.getElementById("bg");
-    const bgCtx = bg.getContext("2d", {alpha:true});
-
-    const rain = document.getElementById("rain");
-    const rainCtx = rain.getContext("2d", {alpha:true});
-
-    let W=1,H=1,DPR=1;
-    function resizeCanvas(c, ctx){
-      if(!c||!ctx) return;
-      c.width = Math.max(1, Math.floor(W*DPR));
-      c.height = Math.max(1, Math.floor(H*DPR));
-      c.style.width = W+"px";
-      c.style.height = H+"px";
-      ctx.setTransform(DPR,0,0,DPR,0,0);
-    }
-    function resizeAll(){
-      W = Math.max(1, Math.floor(window.innerWidth));
-      H = Math.max(1, Math.floor(window.innerHeight));
-      DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-      resizeCanvas(bg, bgCtx);
-      resizeCanvas(rain, rainCtx);
-    }
-    window.addEventListener("resize", resizeAll, {passive:true});
-
-    // -------- Countdown
-    const target = new Date("2026-01-25T00:00:00+01:00");
-    const $days = document.getElementById("days");
-    const $hours = document.getElementById("hours");
-    const $minutes = document.getElementById("minutes");
-
-    const heartA = document.getElementById("heartA");
-    const heartF = document.getElementById("heartF");
-    const pathLine = document.getElementById("pathLine");
-    const dotL = document.getElementById("dotL");
-    const dotR = document.getElementById("dotR");
-
-    const startedAt = Date.now();
-    const totalMs = Math.max(1, target.getTime() - startedAt);
-    const leftStart = 8, rightStart = 92, center = 50;
-
+    // Helper functions
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const clamp01 = (x) => Math.max(0, Math.min(1, x));
+    const targetDate = new Date('2026-01-25T00:00:00+01:00');
+    const daysEl = document.getElementById('days');
+    const hoursEl = document.getElementById('hours');
+    const minutesEl = document.getElementById('minutes');
+    const heartA = document.getElementById('heartA');
+    const heartF = document.getElementById('heartF');
+    const pathLine = document.getElementById('pathLine');
+    const dotL = document.getElementById('dotL');
+    const dotR = document.getElementById('dotR');
+    const startTime = Date.now();
+    const totalMs = Math.max(1, targetDate.getTime() - startTime);
+    const leftStart = 8;
+    const rightStart = 92;
+    const center = 50;
     function updateCountdown(){
       const now = Date.now();
-      let diff = target.getTime() - now;
-      if(diff<0) diff=0;
-
-      const minutesTotal = Math.floor(diff/60000);
-      const days = Math.floor(minutesTotal/(60*24));
-      const hours = Math.floor((minutesTotal - days*60*24)/60);
+      let diff = targetDate.getTime() - now;
+      if(diff < 0) diff = 0;
+      const minutesTotal = Math.floor(diff / 60000);
+      const days = Math.floor(minutesTotal / (60*24));
+      const hours = Math.floor((minutesTotal - days*60*24) / 60);
       const minutes = Math.floor(minutesTotal - days*60*24 - hours*60);
-
-      $days.textContent = String(days);
-      $hours.textContent = pad2(hours);
-      $minutes.textContent = pad2(minutes);
-
-      const p = clamp01((now - startedAt)/totalMs);
-      const leftPos = leftStart + (center-leftStart)*p;
-      const rightPos = rightStart + (center-rightStart)*p;
-
-      heartA.style.left = leftPos + "%";
-      heartF.style.left = rightPos + "%";
-
-      const w = Math.max(0, rightPos-leftPos);
-      pathLine.style.left = leftPos + "%";
-      pathLine.style.width = w + "%";
-      dotL.style.left = leftPos + "%";
-      dotR.style.left = rightPos + "%";
-      pathLine.style.opacity = (w < 1.2) ? "0" : "0.95";
+      daysEl.textContent = String(days);
+      hoursEl.textContent = pad2(hours);
+      minutesEl.textContent = pad2(minutes);
+      const progress = clamp01((now - startTime) / totalMs);
+      const leftPos = leftStart + (center - leftStart) * progress;
+      const rightPos = rightStart + (center - rightStart) * progress;
+      heartA.style.left = leftPos + '%';
+      heartF.style.left = rightPos + '%';
+      const width = Math.max(0, rightPos - leftPos);
+      pathLine.style.left = leftPos + '%';
+      pathLine.style.width = width + '%';
+      dotL.style.left = leftPos + '%';
+      dotR.style.left = rightPos + '%';
+      pathLine.style.opacity = (width < 1.2) ? '0' : '0.95';
     }
     setInterval(updateCountdown, 1000);
-
-    // -------- Background (extra blur, slow)
-    const blobs = Array.from({length: 7}, ()=>({
-      x:0,y:0,r:0,
-      vx: rand(-0.040,0.040),
-      vy: rand(-0.036,0.036),
-      hue: rand(315,345),
-      sat: rand(70,92),
-      lit: rand(55,68),
-      init:false
-    }));
-
-    let lastBg = performance.now();
-    function tickBg(now){
-      const dt = Math.min(32, now-lastBg);
-      lastBg = now;
-
-      const base = bgCtx.createRadialGradient(W*0.5, H*0.25, 40, W*0.5, H*0.60, Math.max(W,H));
-      base.addColorStop(0, "rgba(20,7,26,1)");
-      base.addColorStop(0.55, "rgba(7,3,12,1)");
-      base.addColorStop(1, "rgba(5,3,10,1)");
-      bgCtx.fillStyle = base;
-      bgCtx.fillRect(0,0,W,H);
-
+    updateCountdown();
+    // Lava lamp background
+    const bg = document.getElementById('bg');
+    const bgCtx = bg.getContext('2d', { alpha:true });
+    let BW=1, BH=1, DPR=1;
+    function resizeBg(){
+      BW = Math.max(1, window.innerWidth);
+      BH = Math.max(1, window.innerHeight);
+      DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+      bg.width = Math.floor(BW * DPR);
+      bg.height = Math.floor(BH * DPR);
+      bg.style.width = BW + 'px';
+      bg.style.height = BH + 'px';
+      bgCtx.setTransform(DPR,0,0,DPR,0,0);
+    }
+    window.addEventListener('resize', resizeBg, {passive:true});
+    resizeBg();
+    const blobs = Array.from({length:7}, () => ({ x:0,y:0,r:0,vx:0,vy:0,hue:0,sat:0,lit:0,init:false }));
+    function initBlob(b){
+      b.x = Math.random() * BW;
+      b.y = Math.random() * BH;
+      b.r = Math.random() * (Math.min(BW,BH)*0.24) + Math.min(BW,BH)*0.28;
+      b.vx = (Math.random() - 0.5) * 0.08;
+      b.vy = (Math.random() - 0.5) * 0.08;
+      b.hue = 315 + Math.random() * 30;
+      b.sat = 70 + Math.random() * 22;
+      b.lit = 55 + Math.random() * 13;
+      b.init = true;
+    }
+    blobs.forEach(initBlob);
+    let lastBg = 0;
+    function drawBg(ts){
+      const dt = ts - lastBg;
+      lastBg = ts;
+      // base gradient
+      const grad = bgCtx.createRadialGradient(BW*0.5, BH*0.25, 40, BW*0.5, BH*0.60, Math.max(BW,BH));
+      grad.addColorStop(0, 'rgba(20,7,26,1)');
+      grad.addColorStop(0.55, 'rgba(7,3,12,1)');
+      grad.addColorStop(1, 'rgba(5,3,10,1)');
+      bgCtx.fillStyle = grad;
+      bgCtx.fillRect(0,0,BW,BH);
       bgCtx.save();
-      bgCtx.globalCompositeOperation = "lighter";
-      bgCtx.filter = "blur(175px)"; // even more blur
-
-      for(const b of blobs){
-        if(!b.init){
-          b.x = rand(0,W);
-          b.y = rand(0,H);
-          b.r = rand(Math.min(W,H)*0.28, Math.min(W,H)*0.52);
-          b.init = true;
-        }
-        b.x += b.vx*dt;
-        b.y += b.vy*dt;
-        if(b.x < -b.r*0.2 || b.x > W + b.r*0.2) b.vx *= -1;
-        if(b.y < -b.r*0.2 || b.y > H + b.r*0.2) b.vy *= -1;
-
-        const wobX = Math.sin(now*0.00023 + b.r)*10;
-        const wobY = Math.cos(now*0.00020 + b.hue)*10;
-        const gx = b.x + wobX, gy = b.y + wobY;
-
-        const g = bgCtx.createRadialGradient(gx,gy,b.r*0.10,gx,gy,b.r);
+      bgCtx.globalCompositeOperation = 'lighter';
+      bgCtx.filter = 'blur(175px)';
+      blobs.forEach(b => {
+        if(!b.init) initBlob(b);
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        if(b.x < -b.r*0.2 || b.x > BW + b.r*0.2) b.vx *= -1;
+        if(b.y < -b.r*0.2 || b.y > BH + b.r*0.2) b.vy *= -1;
+        const wobX = Math.sin(ts * 0.00023 + b.r) * 10;
+        const wobY = Math.cos(ts * 0.00020 + b.hue) * 10;
+        const gx = b.x + wobX;
+        const gy = b.y + wobY;
+        const g = bgCtx.createRadialGradient(gx, gy, b.r*0.10, gx, gy, b.r);
         g.addColorStop(0, `hsla(${b.hue} ${b.sat}% ${b.lit}% / 0.54)`);
         g.addColorStop(0.55, `hsla(${b.hue} ${b.sat}% ${b.lit}% / 0.13)`);
         g.addColorStop(1, `hsla(${b.hue} ${b.sat}% ${b.lit}% / 0.00)`);
-
         bgCtx.fillStyle = g;
         bgCtx.beginPath();
-        bgCtx.arc(gx,gy,b.r,0,Math.PI*2);
+        bgCtx.arc(gx, gy, b.r, 0, Math.PI*2);
         bgCtx.fill();
-      }
-
+      });
       bgCtx.restore();
-      requestAnimationFrame(tickBg);
+      requestAnimationFrame(drawBg);
     }
-
-    // -------- Heart rain (WELCOME shower that ALWAYS appears)
-    function drawHeart(ctx, x,y, s, rot, fill, alpha){
-      ctx.save();
-      ctx.translate(x,y);
-      ctx.rotate(rot);
-      ctx.globalAlpha = alpha;
-      ctx.scale(s,s);
-      ctx.beginPath();
-      ctx.moveTo(0, 0.25);
-      ctx.bezierCurveTo(0, -0.10, -0.40, -0.10, -0.40, 0.20);
-      ctx.bezierCurveTo(-0.40, 0.45, -0.15, 0.60, 0, 0.78);
-      ctx.bezierCurveTo(0.15, 0.60, 0.40, 0.45, 0.40, 0.20);
-      ctx.bezierCurveTo(0.40, -0.10, 0, -0.10, 0, 0.25);
-      ctx.closePath();
-      ctx.fillStyle = fill;
-      ctx.fill();
-      ctx.restore();
-    }
-
-    const palette = [
-      "rgba(255,110,190,0.98)",
-      "rgba(255,79,163,0.98)",
-      "rgba(255,170,220,0.92)",
-      "rgba(255,255,255,0.86)"
-    ];
-
-    let particles = [];
-    let rainActive = false;
-    let rainEnd = 0;
-    let lastRain = performance.now();
-
-    function startWelcomeRain(){
-      // reset & start fresh
-      particles = [];
-      rainActive = true;
-      rainEnd = performance.now() + 6800; // ~6.8s visible
-      lastRain = performance.now();
-      requestAnimationFrame(tickRain);
-    }
-
-    function tickRain(now){
-      if(!rainActive) return;
-
-      const dt = Math.min(32, now - lastRain);
-      lastRain = now;
-
-      // stop
-      if(now > rainEnd){
-        rainActive = false;
-        rainCtx.clearRect(0,0,W,H);
-        return;
+    requestAnimationFrame(drawBg);
+    // Heart rain spawner
+    const heartContainer = document.getElementById('heartRain');
+    function spawnHeartRain(count = 90){
+      if(!heartContainer) return;
+      heartContainer.innerHTML = '';
+      const colors = ['#ff4fa3','#ff86c5','#ffd1e9','#ff99cc','#ffffff'];
+      for(let i=0; i<count; i++){
+        const el = document.createElement('span');
+        el.className = 'heartDrop';
+        const size = 16 + Math.random() * 20;
+        const duration = 4 + Math.random() * 5;
+        const delay = Math.random() * 2.5;
+        const drift = (Math.random() - 0.5) * 120 + 'px';
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        el.style.setProperty('--size', size + 'px');
+        el.style.setProperty('--duration', duration + 's');
+        el.style.setProperty('--delay', delay + 's');
+        el.style.setProperty('--drift', drift);
+        el.style.setProperty('--color', color);
+        el.style.left = (Math.random() * 100) + '%';
+        el.textContent = '♥';
+        heartContainer.appendChild(el);
       }
-
-      // spawn over time (so late-start still shows)
-      // keep it light to avoid lag
-      const spawnPerFrame = 2;        // ~120-150 hearts total
-      const maxParticles = 90;
-
-      for(let i=0; i<spawnPerFrame && particles.length < maxParticles; i++){
-        particles.push({
-          x: rand(0,W),
-          y: rand(-H*0.30, -20),
-          vy: rand(0.34, 0.62),
-          vx: rand(-0.06, 0.06),
-          drift: rand(-0.10, 0.10),
-          rot: rand(-0.7, 0.7),
-          vr: rand(-0.010, 0.010),
-          s: rand(0.18, 0.44),
-          a: rand(0.30, 0.70),
-          c: palette[(Math.random()*palette.length)|0],
-        });
-      }
-
-      rainCtx.clearRect(0,0,W,H);
-
-      for(const p of particles){
-        p.x += (p.vx + Math.sin(now*0.001 + p.y*0.003)*p.drift) * 2.0;
-        p.y += p.vy * 6.0;
-        p.rot += p.vr;
-
-        const fadeIn = Math.max(0, Math.min(1, (p.y + 140)/240));
-        const fadeOut = (p.y > H*0.92) ? Math.max(0, 1 - (p.y - H*0.92)/(H*0.08)) : 1;
-        const alpha = p.a * fadeIn * fadeOut;
-
-        drawHeart(rainCtx, p.x, p.y, p.s, p.rot, p.c, alpha);
-
-        // recycle to keep continuous
-        if(p.y > H + 140){
-          p.x = rand(0,W);
-          p.y = rand(-H*0.35, -30);
-          p.vy = rand(0.34, 0.62);
-          p.vx = rand(-0.06, 0.06);
-          p.rot = rand(-0.7, 0.7);
-          p.c = palette[(Math.random()*palette.length)|0];
-        }
-      }
-
-      requestAnimationFrame(tickRain);
     }
-
-    // -------- Start reliably on GitHub Pages + iOS
-    function startAll(){
-      resizeAll();
-      updateCountdown();
-
-      // bg
-      requestAnimationFrame(tickBg);
-
-      // welcome rain (small delay so viewport settles on iOS)
-      setTimeout(() => {
-        resizeAll();
-        startWelcomeRain();
-      }, 180);
+    // Ensure hearts spawn on load and reload reliably
+    function startHeartRain(){
+      // call multiple times for reliability; some hearts may spawn early or late
+      spawnHeartRain();
     }
-
-    // fire immediately (script at end of body), plus extra safety hooks
-    startAll();
-    window.addEventListener("DOMContentLoaded", startAll, {passive:true});
-    window.addEventListener("pageshow", () => { startAll(); }, {passive:true});
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) startAll();
-    }, {passive:true});
+    // run on DOM ready and pageshow
+    document.addEventListener('DOMContentLoaded', () => {
+      // small timeout ensures sizes computed on mobile
+      setTimeout(startHeartRain, 100);
+      // backup call after 600ms
+      setTimeout(startHeartRain, 600);
+    });
+    window.addEventListener('pageshow', () => {
+      setTimeout(startHeartRain, 100);
+    });
   </script>
 </body>
 </html>
